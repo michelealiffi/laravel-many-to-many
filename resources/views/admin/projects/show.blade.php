@@ -5,6 +5,13 @@
 @endsection
 
 @section('content')
+    <h3>Technologies</h3>
+    <ul>
+        @foreach ($project->technologies as $technology)
+            <li>{{ $technology->name }}</li>
+        @endforeach
+    </ul>
+
     <div class="show">
         <div class="mt-5 container">
             <div class="row align-items-center">
