@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Project;
+use App\Models\Technology;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use Illuminate\Support\Str;
@@ -29,28 +30,27 @@ class ProjectController extends Controller
      */
     public function create()
     {
-        return view('admin.projects.create');
+        $technologies = Technology::all();
+        return view('admin.projects.create', compact('technologies'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreProjectRequest $request)
+    public function store(Request $request)
     {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'technologies' => 'array',
+            'technologies.*' => 'exists:technologies,id',
+        ]);
 
-        $data = $request->validated();
-        $data['images'] = array_map('trim', explode(',', $data['images']));
+        $project = Project::create($validated);
+        $project->technologies()->sync($request->technologies);
 
-        Log::info('Create Title: ' . $data['title']);
-        $data['slug'] = Str::slug($data['title'], '-');
-        Log::info('Slug: ' . $data['slug']);
-
-
-        Project::create($data);
-
-        return redirect()->route('home');
+        return redirect()->route('admin.projects.index')->with('success', 'Project created successfully.');
     }
-
 
     /**
      * Display the specified resource.
@@ -66,25 +66,26 @@ class ProjectController extends Controller
      */
     public function edit(Project $project)
     {
-        return view('admin.projects.edit', compact('project'));
+        $technologies = Technology::all();
+        return view('admin.projects.edit', compact('project', 'technologies'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateProjectRequest $request, Project $project)
+    public function update(Request $request, Project $project)
     {
-        $data = $request->validated();
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'technologies' => 'array',
+            'technologies.*' => 'exists:technologies,id',
+        ]);
 
-        $data['images'] = array_map('trim', explode(',', $data['images']));
+        $project->update($validated);
+        $project->technologies()->sync($request->technologies);
 
-        Log::info('Update Title: ' . $data['title']);
-        $data['slug'] = Str::slug($data['title'], '-');
-        Log::info('Slug: ' . $data['slug']);
-
-        $project->update($data);
-
-        return redirect()->route('home');
+        return redirect()->route('admin.projects.index')->with('success', 'Project updated successfully.');
     }
 
     /**
@@ -93,7 +94,6 @@ class ProjectController extends Controller
     public function destroy(Project $project)
     {
         $project->delete();
-
-        return redirect()->route('home');
+        return redirect()->route('admin.projects.index')->with('success', 'Project deleted successfully.');
     }
 }
